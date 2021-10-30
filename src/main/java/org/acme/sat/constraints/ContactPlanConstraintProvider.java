@@ -17,10 +17,12 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                 visibilityConflict(constraintFactory),
                 visibilityTooShort(constraintFactory),
                 visibilityForOtherSat(constraintFactory),
-                antennaConflict(constraintFactory)          
+                satConflict(constraintFactory),
+                antennaConflict(constraintFactory)    
         };
     }
 
+    // Must not assign the same visibility to more than one contact request
     Constraint visibilityConflict(ConstraintFactory constraintFactory) {
         return constraintFactory
                 // Select each pair of 2 different ContactRequests ...
@@ -32,6 +34,7 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                 .penalize("Visibility conflict", HardSoftScore.ONE_HARD);
     }
 
+    // Must not assign a visibility with a duration shorter than required by the contact request
     Constraint visibilityTooShort(ConstraintFactory constraintFactory) {
         return constraintFactory
                 // Select contacts ...
@@ -42,6 +45,7 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                 .penalize("Visibility too short", HardSoftScore.ONE_HARD);
     }
 
+    // Must not assign a visibility for sat X to a contact request for sat Y
     Constraint visibilityForOtherSat(ConstraintFactory constraintFactory) {
         return constraintFactory
                 // Select contacts ...
@@ -52,6 +56,24 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                 .penalize("Visibility does not match sat", HardSoftScore.ONE_HARD);
     }
 
+    // Can not assign overlapping visibilities for a sat
+    Constraint satConflict(ConstraintFactory constraintFactory) {
+        return constraintFactory
+                // Select each pair of 2 different ContactRequests ...
+                .fromUniquePair(ContactRequest.class,
+                        // ... in the same satellite                        
+                        Joiners.equal(ContactRequest::getSatellite)
+                ).filter((cr1,cr2) -> 
+                        // ... have a visibility allocated ...
+                        cr1.getVisibility() != null && cr2.getVisibility() != null
+                        // ... and the visibilities' periods overlap
+                        && overlappingPeriods(cr1.getVisibility().getFrom(), cr1.getVisibility().getTo(), cr2.getVisibility().getFrom(), cr2.getVisibility().getTo())
+                )
+                // ... and penalize each pair with a hard weight.
+                .penalize("Satellite conflict", HardSoftScore.ONE_HARD);
+    }
+
+    // Can not use the same antenna to stablish more than one contact
     Constraint antennaConflict(ConstraintFactory constraintFactory) {
         return constraintFactory
                 /// Select each pair of 2 different ContactRequests ...
