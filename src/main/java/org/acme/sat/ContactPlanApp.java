@@ -35,9 +35,7 @@ public class ContactPlanApp {
                 .withSolutionClass(ContactPlan.class)
                 .withEntityClasses(ContactRequest.class)
                 .withConstraintProviderClass(ContactPlanConstraintProvider.class)
-                // The solver runs only for 5 seconds on this small dataset.
-                // It's recommended to run for at least 5 minutes ("5m") otherwise.
-                .withTerminationSpentLimit(Duration.ofSeconds(5)));
+                .withTerminationSpentLimit(Duration.ofSeconds(10)));
 
         ScoreManager<ContactPlan, HardSoftScore> scoreManager = ScoreManager.create(solverFactory);
 
@@ -59,33 +57,73 @@ public class ContactPlanApp {
         print(solution, scoreManager, t0);
     }
 
-    public static ContactPlan loadData(Instant now ) {
+    public static ContactPlan loadData(Instant t0 ) {
         List<Visibility> visibilities = new ArrayList<>(2);
-        visibilities.add(new Visibility("sat1","ls1",now,now.plusSeconds(10)));
-        visibilities.add(new Visibility("sat1","ls1",now.plusSeconds(5),now.plusSeconds(14)));
-        visibilities.add(new Visibility("sat1","ls1",now.plusSeconds(11),now.plusSeconds(18)));
-        visibilities.add(new Visibility("sat2","ls2",now.plusSeconds(10),now.plusSeconds(30)));
-        //visibilities.add(new Visibility("sat2","ls2",now.plusSeconds(0),now.plusSeconds(8)));
+        visibilities.add(new Visibility("sat1","ls1",t0.plusSeconds(1),t0.plusSeconds(6)));
+        visibilities.add(new Visibility("sat1","ls2",t0.plusSeconds(10),t0.plusSeconds(16)));
+        visibilities.add(new Visibility("sat1","ls3",t0.plusSeconds(18),t0.plusSeconds(26)));
+        visibilities.add(new Visibility("sat1","ls2",t0.plusSeconds(30),t0.plusSeconds(38)));
+
+        visibilities.add(new Visibility("sat2","ls1",t0.plusSeconds(3),t0.plusSeconds(9)));
+        visibilities.add(new Visibility("sat2","ls3",t0.plusSeconds(11),t0.plusSeconds(13)));
+        visibilities.add(new Visibility("sat2","ls2",t0.plusSeconds(19),t0.plusSeconds(23)));
+        visibilities.add(new Visibility("sat2","ls1",t0.plusSeconds(25),t0.plusSeconds(29)));
+
+        visibilities.add(new Visibility("sat3","ls2",t0.plusSeconds(0),t0.plusSeconds(5)));
+        visibilities.add(new Visibility("sat3","ls1",t0.plusSeconds(10),t0.plusSeconds(18)));
+        visibilities.add(new Visibility("sat3","ls3",t0.plusSeconds(22),t0.plusSeconds(27)));
+
+        print(visibilities, t0);
 
         List<ContactRequest> contactRequests = new ArrayList<>();
         long id = 0;
         contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(4, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
 
-        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(12, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(3, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(4, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(4, ChronoUnit.SECONDS)));
+
+        contactRequests.add(new ContactRequest(id++,"sat3",Duration.of(5, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest(id++,"sat3",Duration.of(6, ChronoUnit.SECONDS)));
 
         return new ContactPlan(visibilities, contactRequests);
     }
 
+    private static void print(List<Visibility> visibilities, Instant t0) {
+        String lb = System.getProperty("line.separator");
+        StringBuilder visibilitiesPU = new StringBuilder("@startuml"+lb);                
+        Set<String> satAlreadySeen = new HashSet<>();
+        for (Visibility v : visibilities) {
+            String satellite = v.getSatellite();
+            String antenna = v.getAntenna();
+            if (!satAlreadySeen.contains(satellite)) {
+                visibilitiesPU.append("concise "+satellite+lb);    
+                satAlreadySeen.add(satellite);
+            }
+            long starts = Duration.between(t0, v.getFrom()).getSeconds();
+            visibilitiesPU.append("@"+starts+lb);
+            visibilitiesPU.append(satellite+" is \"visible @"+antenna+"\""+lb);
+            visibilitiesPU.append("@"+(starts+v.getDuration().getSeconds())+lb);
+            visibilitiesPU.append(satellite+" is {-}"+lb);
+        }
+
+        visibilitiesPU.append("@enduml");
+        try {
+            Files.write(Paths.get("visibilities.pu"), visibilitiesPU.toString().getBytes());
+        } catch (IOException e) {
+            LOGGER.error("Unable to generate visibilities diagram");
+            LOGGER.error(e.getMessage());
+        }
+    }
+
     private static void print(ContactPlan plan, ScoreManager<ContactPlan, HardSoftScore> scoreManager, Instant t0) {        
-        LOGGER.info("");        
         String lb = System.getProperty("line.separator");
         Set<String> satAlreadySeen = new HashSet<>();
         StringBuilder contactPlan = new StringBuilder("@startuml"+lb);                
         Map<Object,Indictment<HardSoftScore>> indictments = scoreManager.explainScore(plan).getIndictmentMap();
         for (ContactRequest r : plan.getContactRequests()) {
-            LOGGER.info(r.toString());            
             String satellite = r.getSatellite();
             if (!satAlreadySeen.contains(satellite)) {
                 contactPlan.append("concise "+satellite+lb);    
