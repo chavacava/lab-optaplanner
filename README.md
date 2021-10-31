@@ -24,3 +24,11 @@ mvn test
 ```
 mvn exec:java
 ```
+
+The execution generates two files:
+1. `visibilities.pu` visibilities temporal diagram in PlantUML format.
+![visibilities.pu](./images/visibilities.png)
+1. `contact-plan.pu` contact plan temporal diagram in PlantUML format.
+![contact-plan.pu](./images/unsolvable-plan.png)
+where unsolved contact request are highlighted in red. Fully solvable plans look like
+![contact-plan.pu](./images/solved-plan.png)
