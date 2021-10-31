@@ -53,7 +53,7 @@ public class ContactRequest {
 
     @Override
     public String toString() {
-        return "ContactRequest [duration=" + duration + ", id=" + id + ", satellite=" + satellite + ", visibility="
+        return "ContactRequest [duration=" + duration + ", id=" + id + ", satellite=" + satellite + ", "
                 + visibility + "]";
     }    
 }
