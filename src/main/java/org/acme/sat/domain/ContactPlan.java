@@ -34,6 +34,9 @@ public class ContactPlan {
 
     public List<ContactRequest> getContactRequests() {
         return contactRequests;
-    }   
-    
+    }
+
+    public HardSoftScore getScore() {
+        return score;
+    }    
 }
