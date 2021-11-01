@@ -25,6 +25,23 @@ mvn test
 mvn exec:java
 ```
 
+The execution takes the following input files:
+1. `input-visibilities.csv` the available satellite visibilities with the following fields: `id`, `satellite`, `antenna`, `from`, `to`. For example
+```csv
+1,sat1,ls1,2000-01-01T00:00:01.00Z,2000-01-01T00:00:06.00Z
+2,sat1,ls2,2000-01-01T00:00:10.00Z,2000-01-01T00:00:16.00Z
+3,sat1,ls3,2000-01-01T00:00:18.00Z,2000-01-01T00:00:26.00Z
+4,sat1,ls2,2000-01-01T00:00:30.00Z,2000-01-01T00:00:38.00Z
+```
+
+2. `input-contact-requests.csv` the satellite contacts to schedule with the following fields: `id`, `duration`, `satellite`. For example
+```csv
+73556,PT6S,sat1
+b7e88,PT6S,sat1
+fd6f4,PT6S,sat1
+78516,PT3S,sat2
+```
+
 The execution generates two files:
 1. `visibilities.pu` visibilities temporal diagram in PlantUML format.
 ![visibilities.pu](./images/visibilities.png)
