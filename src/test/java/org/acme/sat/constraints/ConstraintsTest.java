@@ -17,13 +17,13 @@ public class ConstraintsTest {
     public void visibilityConflict(){
         Instant now = Instant.now();
         Visibility visibility= new Visibility("sat1","ls1",now,now.plusSeconds(10));
-        ContactRequest cr1 = new ContactRequest(1L,"sat1",Duration.of(6, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS));
         cr1.setVisibility(visibility);
-        ContactRequest cr2 = new ContactRequest(2L,"sat1",Duration.of(8, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(8, ChronoUnit.SECONDS));
         cr2.setVisibility(visibility);      
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityConflict).given(cr1,cr2).penalizesBy(1);
 
-        ContactRequest cr3 = new ContactRequest(3L,"sat1",Duration.of(7, ChronoUnit.SECONDS));
+        ContactRequest cr3 = new ContactRequest("sat1",Duration.of(7, ChronoUnit.SECONDS));
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityConflict).given(cr1,cr3).penalizesBy(0);
 
         Visibility otherVisibility= new Visibility("sat1","ls1",now,now.plusSeconds(10));
@@ -35,11 +35,11 @@ public class ConstraintsTest {
     public void visibilityTooShort(){
         Instant now = Instant.now();
         Visibility visibility= new Visibility("sat1","ls1",now,now.plusSeconds(10));
-        ContactRequest cr1 = new ContactRequest(1L,"sat1",Duration.of(11, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(11, ChronoUnit.SECONDS));
         cr1.setVisibility(visibility);               
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityTooShort).given(cr1).penalizesBy(1);
         
-        ContactRequest cr2 = new ContactRequest(3L,"sat1",Duration.of(10, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(10, ChronoUnit.SECONDS));
         cr2.setVisibility(visibility);
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityTooShort).given(cr2).penalizesBy(0);
         
@@ -49,11 +49,11 @@ public class ConstraintsTest {
     public void visibilityForOtherSat(){
         Instant now = Instant.now();
         Visibility visibility= new Visibility("sat1","ls1",now,now.plusSeconds(10));
-        ContactRequest cr1 = new ContactRequest(1L,"sat2",Duration.of(5, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat2",Duration.of(5, ChronoUnit.SECONDS));
         cr1.setVisibility(visibility);               
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityForOtherSat).given(cr1).penalizesBy(1);
         
-        ContactRequest cr2 = new ContactRequest(3L,"sat1",Duration.of(5, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(5, ChronoUnit.SECONDS));
         cr2.setVisibility(visibility);
         constraintVerifier.verifyThat(ContactPlanConstraintProvider::visibilityForOtherSat).given(cr2).penalizesBy(0);        
     }
@@ -70,8 +70,8 @@ public class ConstraintsTest {
         v2   /////
         v3          ////// 
         */
-        ContactRequest cr1 = new ContactRequest(1L,"sat1",Duration.of(1, ChronoUnit.SECONDS));
-        ContactRequest cr2 = new ContactRequest(2L,"sat1",Duration.of(1, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
         
         cr1.setVisibility(v1);
         cr2.setVisibility(v2);      
@@ -112,8 +112,8 @@ public class ConstraintsTest {
         v2   /////
         v3          ////// 
         */
-        ContactRequest cr1 = new ContactRequest(1L,"sat1",Duration.of(1, ChronoUnit.SECONDS));
-        ContactRequest cr2 = new ContactRequest(2L,"sat1",Duration.of(1, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
         
         cr1.setVisibility(v1);
         cr2.setVisibility(v2);      

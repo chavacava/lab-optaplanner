@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 public class ContactPlanApp {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ContactPlanApp.class);
+    private static String lb = System.getProperty("line.separator");
 
     public static void main(String[] args) {
         SolverFactory<ContactPlan> solverFactory = SolverFactory.create(new SolverConfig()
@@ -55,6 +56,16 @@ public class ContactPlanApp {
         }
 
         print(solution, scoreManager, t0);
+        generateContactRequestCSV(solution);
+    }
+
+    private static void generateContactRequestCSV(ContactPlan solution) {
+        List<ContactRequest> contacts = solution.getContactRequests();
+        StringBuilder content = new StringBuilder(ContactRequest.getCSVHeader()+lb);                
+        for (ContactRequest cr : contacts) {            
+            content.append(cr.toCSV()+lb);
+        }
+        saveToFile("planned-contacts.csv", content);
     }
 
     public static ContactPlan loadData(Instant t0 ) {
@@ -76,23 +87,21 @@ public class ContactPlanApp {
         print(visibilities, t0);
 
         List<ContactRequest> contactRequests = new ArrayList<>();
-        long id = 0;
-        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat1",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
 
-        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(3, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(4, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat2",Duration.of(4, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat2",Duration.of(3, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat2",Duration.of(4, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat2",Duration.of(4, ChronoUnit.SECONDS)));
 
-        contactRequests.add(new ContactRequest(id++,"sat3",Duration.of(5, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest(id++,"sat3",Duration.of(6, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat3",Duration.of(5, ChronoUnit.SECONDS)));
+        contactRequests.add(new ContactRequest("sat3",Duration.of(6, ChronoUnit.SECONDS)));
 
         return new ContactPlan(visibilities, contactRequests);
     }
 
-    private static void print(List<Visibility> visibilities, Instant t0) {
-        String lb = System.getProperty("line.separator");
+    private static void print(List<Visibility> visibilities, Instant t0) {        
         StringBuilder visibilitiesPU = new StringBuilder("@startuml"+lb);                
         Set<String> satAlreadySeen = new HashSet<>();
         for (Visibility v : visibilities) {
@@ -110,48 +119,36 @@ public class ContactPlanApp {
         }
 
         visibilitiesPU.append("@enduml");
-        try {
-            Files.write(Paths.get("visibilities.pu"), visibilitiesPU.toString().getBytes());
-        } catch (IOException e) {
-            LOGGER.error("Unable to generate visibilities diagram");
-            LOGGER.error(e.getMessage());
-        }
+        saveToFile("visibilities.pu", visibilitiesPU);
     }
 
     private static void print(ContactPlan plan, ScoreManager<ContactPlan, HardSoftScore> scoreManager, Instant t0) {        
-        String lb = System.getProperty("line.separator");
         Set<String> satAlreadySeen = new HashSet<>();
-        StringBuilder contactPlan = new StringBuilder("@startuml"+lb);                
+        StringBuilder contactPlanPU = new StringBuilder("@startuml"+lb);                
         Map<Object,Indictment<HardSoftScore>> indictments = scoreManager.explainScore(plan).getIndictmentMap();
         for (ContactRequest r : plan.getContactRequests()) {
             String satellite = r.getSatellite();
             if (!satAlreadySeen.contains(satellite)) {
-                contactPlan.append("concise "+satellite+lb);    
+                contactPlanPU.append("concise "+satellite+lb);    
                 satAlreadySeen.add(satellite);
             }
             Indictment<HardSoftScore> crIndictment = indictments.get(r);            
             Visibility visibility = r.getVisibility();
             long starts = Duration.between(t0, visibility.getFrom()).getSeconds();
-            contactPlan.append("@"+starts+lb);
+            contactPlanPU.append("@"+starts+lb);
             String color = "#lightgreen";
             String contactId = "contact "+r.getId();
             if (crIndictment != null && crIndictment.getScore().getHardScore() < 0) {    
-                contactPlan.append("note top of "+satellite+" : "+getConstraintsFromIndictement(crIndictment.getConstraintMatchSet())+lb);
+                contactPlanPU.append("note top of "+satellite+" : "+getConstraintsFromIndictement(crIndictment.getConstraintMatchSet())+lb);
                 color = "#red";
                 contactId = "contact ?";
             }
-            contactPlan.append(satellite+" is \""+contactId+"\" "+color+lb);
-            contactPlan.append("@"+(starts+visibility.getDuration().getSeconds())+lb);
-            contactPlan.append(satellite+" is {-}"+lb);
+            contactPlanPU.append(satellite+" is \""+contactId+"\" "+color+lb);
+            contactPlanPU.append("@"+(starts+visibility.getDuration().getSeconds())+lb);
+            contactPlanPU.append(satellite+" is {-}"+lb);
         }
-        contactPlan.append("@enduml");
-        
-        try {
-            Files.write(Paths.get("contact-plan.pu"), contactPlan.toString().getBytes());
-        } catch (IOException e) {
-            LOGGER.error("Unable to generate contact plan diagram");
-            LOGGER.error(e.getMessage());
-        }
+        contactPlanPU.append("@enduml");
+        saveToFile("contact-plan.pu", contactPlanPU);
     }
 
     private static String getConstraintsFromIndictement(Set<ConstraintMatch<HardSoftScore>> constraintMatchSet) {
@@ -164,5 +161,14 @@ public class ContactPlanApp {
         }
 
         return result.toString();
+    }
+
+    private static void saveToFile(String filename, StringBuilder content){
+        try {
+            Files.write(Paths.get(filename), content.toString().getBytes());
+        } catch (IOException e) {
+            LOGGER.error("Unable to generate "+filename);
+            LOGGER.error(e.getMessage());
+        }
     }
 }
