@@ -112,8 +112,8 @@ public class ConstraintsTest {
         v2   /////
         v3          ////// 
         */
-        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
-        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(1, ChronoUnit.SECONDS));
+        ContactRequest cr1 = new ContactRequest("sat1",Duration.of(3, ChronoUnit.SECONDS));
+        ContactRequest cr2 = new ContactRequest("sat1",Duration.of(3, ChronoUnit.SECONDS));
         
         cr1.setVisibility(v1);
         cr2.setVisibility(v2);      
@@ -125,11 +125,11 @@ public class ConstraintsTest {
 
         cr1.setVisibility(v1);
         cr2.setVisibility(v3);
-        constraintVerifier.verifyThat(ContactPlanConstraintProvider::antennaConflict).given(cr1,cr2).penalizesBy(1);
+        constraintVerifier.verifyThat(ContactPlanConstraintProvider::antennaConflict).given(cr1,cr2).penalizesBy(0);
 
         cr1.setVisibility(v3);
         cr2.setVisibility(v1);
-        constraintVerifier.verifyThat(ContactPlanConstraintProvider::antennaConflict).given(cr1,cr2).penalizesBy(1);
+        constraintVerifier.verifyThat(ContactPlanConstraintProvider::antennaConflict).given(cr1,cr2).penalizesBy(0);
 
         cr1.setVisibility(v2);
         cr2.setVisibility(v3);

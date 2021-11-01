@@ -85,7 +85,11 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                         // ... and visibilities are on the same antenna ...
                         && cr1.getVisibility().getAntenna().equals(cr2.getVisibility().getAntenna())
                         // ... and the visibilities' periods overlap
-                        && overlappingPeriods(cr1.getVisibility().getFrom(), cr1.getVisibility().getTo(), cr2.getVisibility().getFrom(), cr2.getVisibility().getTo())
+                        && overlappingPeriods(
+                                cr1.getVisibility().getFrom(), 
+                                cr1.getVisibility().getFrom().plus(cr1.getDuration()), 
+                                cr2.getVisibility().getFrom(), 
+                                cr2.getVisibility().getFrom().plus(cr2.getDuration()))
                 )
         // ... and penalize each pair with a hard weight.
         .penalize("Antenna conflict", HardSoftScore.ONE_HARD);
