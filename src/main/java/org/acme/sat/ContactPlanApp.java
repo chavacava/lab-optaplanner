@@ -125,25 +125,25 @@ public class ContactPlanApp {
         Set<String> satAlreadySeen = new HashSet<>();
         StringBuilder contactPlanPU = new StringBuilder("@startuml"+lb);                
         Map<Object,Indictment<HardSoftScore>> indictments = scoreManager.explainScore(plan).getIndictmentMap();
-        for (ContactRequest r : plan.getContactRequests()) {
-            String satellite = r.getSatellite();
+        for (ContactRequest cr : plan.getContactRequests()) {
+            String satellite = cr.getSatellite();
             if (!satAlreadySeen.contains(satellite)) {
                 contactPlanPU.append("concise "+satellite+lb);    
                 satAlreadySeen.add(satellite);
             }
-            Indictment<HardSoftScore> crIndictment = indictments.get(r);            
-            Visibility visibility = r.getVisibility();
+            Indictment<HardSoftScore> crIndictment = indictments.get(cr);            
+            Visibility visibility = cr.getVisibility();
             long starts = Duration.between(t0, visibility.getFrom()).getSeconds();
             contactPlanPU.append("@"+starts+lb);
             String color = "#lightgreen";
-            String contactId = "contact "+r.getId();
+            String contactId = "contact "+cr.getId();
             if (crIndictment != null && crIndictment.getScore().getHardScore() < 0) {    
                 contactPlanPU.append("note top of "+satellite+" : "+getConstraintsFromIndictement(crIndictment.getConstraintMatchSet())+lb);
                 color = "#red";
                 contactId = "contact ?";
             }
-            contactPlanPU.append(satellite+" is \""+contactId+"\" "+color+lb);
-            contactPlanPU.append("@"+(starts+visibility.getDuration().getSeconds())+lb);
+            contactPlanPU.append(satellite+" is \""+contactId+" @"+cr.getVisibility().getAntenna()+"\" "+color+lb);
+            contactPlanPU.append("@"+(starts+cr.getDuration().getSeconds())+lb);
             contactPlanPU.append(satellite+" is {-}"+lb);
         }
         contactPlanPU.append("@enduml");
