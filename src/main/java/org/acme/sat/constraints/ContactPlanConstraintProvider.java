@@ -51,7 +51,7 @@ public class ContactPlanConstraintProvider implements ConstraintProvider {
                 // Select contacts ...
                 .from(ContactRequest.class)
                         // ... with visibilities not matching the requested sat 
-                        .filter(cr -> cr.getVisibility() != null && cr.getSatellite() != cr.getVisibility().getSatellite())                        
+                        .filter(cr -> cr.getVisibility() != null && !(cr.getSatellite().equals(cr.getVisibility().getSatellite())))
                 // ... and penalize them with a hard weight.
                 .penalize("Visibility does not match sat", HardSoftScore.ONE_HARD);
     }

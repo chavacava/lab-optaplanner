@@ -5,12 +5,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.acme.sat.constraints.ContactPlanConstraintProvider;
 import org.acme.sat.domain.ContactPlan;
@@ -40,7 +40,7 @@ public class ContactPlanApp {
 
         ScoreManager<ContactPlan, HardSoftScore> scoreManager = ScoreManager.create(solverFactory);
 
-        Instant t0 = Instant.now();
+        Instant t0 = Instant.parse("2000-01-01T00:00:00.00Z");
         // Load the problem
         ContactPlan problem = loadData(t0);
 
@@ -56,49 +56,48 @@ public class ContactPlanApp {
         }
 
         print(solution, scoreManager, t0);
-        generateContactRequestCSV(solution);
     }
 
-    private static void generateContactRequestCSV(ContactPlan solution) {
-        List<ContactRequest> contacts = solution.getContactRequests();
-        StringBuilder content = new StringBuilder(ContactRequest.getCSVHeader()+lb);                
-        for (ContactRequest cr : contacts) {            
-            content.append(cr.toCSV()+lb);
+    public static ContactPlan loadData(Instant t0) {
+        List<Visibility> visibilities = new ArrayList<>();
+        final String visibilitiesCVSFile = "input-visibilities.csv";
+        try {
+            visibilities= loadVisibilitiesFromCSV(visibilitiesCVSFile);
+        } catch (IOException e) {
+            LOGGER.error("Unable to read from "+visibilitiesCVSFile);
+            LOGGER.error(e.toString());
+            System.exit(1);
         }
-        saveToFile("planned-contacts.csv", content);
-    }
-
-    public static ContactPlan loadData(Instant t0 ) {
-        List<Visibility> visibilities = new ArrayList<>(2);
-        visibilities.add(new Visibility("sat1","ls1",t0.plusSeconds(1),t0.plusSeconds(6)));
-        visibilities.add(new Visibility("sat1","ls2",t0.plusSeconds(10),t0.plusSeconds(16)));
-        visibilities.add(new Visibility("sat1","ls3",t0.plusSeconds(18),t0.plusSeconds(26)));
-        visibilities.add(new Visibility("sat1","ls2",t0.plusSeconds(30),t0.plusSeconds(38)));
-
-        visibilities.add(new Visibility("sat2","ls1",t0.plusSeconds(3),t0.plusSeconds(9)));
-        visibilities.add(new Visibility("sat2","ls3",t0.plusSeconds(11),t0.plusSeconds(13)));
-        visibilities.add(new Visibility("sat2","ls2",t0.plusSeconds(19),t0.plusSeconds(23)));
-        visibilities.add(new Visibility("sat2","ls1",t0.plusSeconds(25),t0.plusSeconds(29)));
-
-        visibilities.add(new Visibility("sat3","ls2",t0.plusSeconds(0),t0.plusSeconds(5)));
-        visibilities.add(new Visibility("sat3","ls1",t0.plusSeconds(10),t0.plusSeconds(18)));
-        visibilities.add(new Visibility("sat3","ls3",t0.plusSeconds(22),t0.plusSeconds(27)));
 
         print(visibilities, t0);
 
         List<ContactRequest> contactRequests = new ArrayList<>();
-        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest("sat1",Duration.of(6, ChronoUnit.SECONDS)));
-
-        contactRequests.add(new ContactRequest("sat2",Duration.of(3, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest("sat2",Duration.of(4, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest("sat2",Duration.of(4, ChronoUnit.SECONDS)));
-
-        contactRequests.add(new ContactRequest("sat3",Duration.of(5, ChronoUnit.SECONDS)));
-        contactRequests.add(new ContactRequest("sat3",Duration.of(6, ChronoUnit.SECONDS)));
-
+        final String contactRequestCVSFile = "input-contact-requests.csv";
+        try {
+            contactRequests = loadContactRequestsFromCSV(contactRequestCVSFile);
+        } catch (IOException e) {
+            LOGGER.error("Unable to read from "+contactRequestCVSFile);
+            LOGGER.error(e.toString());
+            System.exit(1);
+        }
+        
         return new ContactPlan(visibilities, contactRequests);
+    }
+
+    private static List<Visibility> loadVisibilitiesFromCSV(String csvFile) throws IOException {
+        List<Visibility> visibilities = new ArrayList<>();
+        try (Stream<String> stream = Files.lines(Paths.get(csvFile))) {
+            stream.forEach(l -> visibilities.add(new Visibility(l)));
+        }
+        return visibilities;
+    }
+
+    private static List<ContactRequest> loadContactRequestsFromCSV(String csvFile) throws IOException {
+        List<ContactRequest> contactRequests = new ArrayList<>(); 
+        try (Stream<String> stream = Files.lines(Paths.get(csvFile))) {
+            stream.forEach(l -> contactRequests.add(new ContactRequest(l)));
+        }
+        return contactRequests;
     }
 
     private static void print(List<Visibility> visibilities, Instant t0) {        
